@@ -58,98 +58,104 @@ from a centralized dashboard.
 
 ## 📁 Project Structure
 
+> 🏗️ **VulnTrack** is organized into 3 independent Django apps — one per team member — plus a shared template layer.
+
 ```
-VulnTrack/
+📦 VulnTrack/
 │
-├── manage.py
-├── requirements.txt
-├── .gitignore
-├── README.md
-├── db.sqlite3                    (generated after migrate)
+├── ⚙️  manage.py                    Django entry point
+├── 📋 requirements.txt               Python dependencies
+├── 🚫 .gitignore                     Git ignore rules
+├── 📖 README.md                      You are here
+├── 🗄️  db.sqlite3                    Generated after migrate
 │
-├── vulntrack/                    Django project config
-│   ├── __init__.py
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
+├── 🎯 vulntrack/                     Django project config
+│   ├── 🔧 __init__.py
+│   ├── ⚙️  settings.py                All project settings
+│   ├── 🔗 urls.py                     Root URL router
+│   └── 🌐 wsgi.py                     WSGI entry
 │
-├── member1_core/                 M1: Users · Targets · Recon · Comparison
-│   ├── __init__.py
-│   ├── apps.py
-│   ├── signals.py
-│   ├── utils.py
-│   ├── models.py
-│   ├── forms.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── comparison.py
-│   ├── admin.py
-│   └── migrations/
-│       └── __init__.py
+├── 👤 member1_core/                  USER & RECON LAYER
+│   ├── 🧩 __init__.py
+│   ├── 🎛️  apps.py
+│   ├── 📡 signals.py                  Model signals
+│   ├── 🛠️  utils.py                    Helper utilities
+│   ├── 🗃️  models.py                   UserProfile · Target · Subdomain
+│   │                                  · DNSRecord · AssetChange · ScanComparison
+│   ├── 📝 forms.py                    Register · Profile · Target · Comparison
+│   ├── 👁️  views.py                    CRUD + verification views
+│   ├── 🔗 urls.py                     /accounts/ · /targets/ · /comparisons/
+│   ├── 🔍 comparison.py               Scan diff engine
+│   ├── 🎨 admin.py                    Django admin registration
+│   └── 📁 migrations/                 Auto-generated
+│       └── 🧩 __init__.py
 │
-├── member2_assessment/           M2: Scope · Profiles · Findings
-│   ├── __init__.py
-│   ├── apps.py
-│   ├── models.py
-│   ├── forms.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── services.py
-│   ├── admin.py
-│   └── migrations/
-│       └── __init__.py
+├── 🕵️ member2_assessment/            ASSESSMENT LAYER
+│   ├── 🧩 __init__.py
+│   ├── 🎛️  apps.py
+│   ├── 🗃️  models.py                   ScopeRule · ScanProfile · Host · Port
+│   │                                  · Technology · Endpoint · VulnerabilityFinding
+│   │                                  · FindingCorrelation
+│   ├── 📝 forms.py                    ScopeRuleForm · ScanProfileForm
+│   ├── 👁️  views.py                    Profiles · Scopes · Results · Findings
+│   ├── 🔗 urls.py                     /assessment/profiles/ · /scopes/ · /findings/
+│   ├── ⚡ services.py                  correlate_scan() engine
+│   ├── 🎨 admin.py
+│   └── 📁 migrations/
+│       └── 🧩 __init__.py
 │
-├── member3_operations/           M3: Scans · Dashboard · Reports · AI
-│   ├── __init__.py
-│   ├── apps.py
-│   ├── models.py
-│   ├── forms.py
-│   ├── views.py
-│   ├── urls.py
-│   ├── admin.py
-│   ├── tasks.py
-│   ├── services/
-│   │   ├── __init__.py
-│   │   ├── scanner.py
-│   │   ├── queue.py
-│   │   ├── reporting.py
-│   │   └── ai.py
-│   └── migrations/
-│       └── __init__.py
+├── 🚀 member3_operations/            OPERATIONS & AI LAYER
+│   ├── 🧩 __init__.py
+│   ├── 🎛️  apps.py
+│   ├── 🗃️  models.py                   ScanJob · ScanLog · Evidence
+│   │                                  · Remediation · Notification · Report
+│   ├── 📝 forms.py                    ScanJob · Evidence · Remediation
+│   ├── 👁️  views.py                    Scans · Dashboard · Notifications · Reports
+│   ├── 🔗 urls.py                     /scans/ · /notifications/ · /reports/
+│   ├── 🎨 admin.py
+│   ├── ⏱️  tasks.py                    Celery async tasks
+│   ├── 📁 services/
+│   │   ├── 🧩 __init__.py
+│   │   ├── 🔬 scanner.py              Core scanner engine
+│   │   ├── 📤 queue.py                Task queue handler
+│   │   ├── 📄 reporting.py            PDF/CSV report generator
+│   │   └── 🤖 ai.py                   AI remediation suggestions
+│   └── 📁 migrations/
+│       └── 🧩 __init__.py
 │
-├── templates/
-│   ├── base.html
-│   ├── shared/
-│   │   └── form.html
-│   ├── registration/
-│   │   └── login.html
-│   ├── member1_core/
-│   │   ├── profile.html
-│   │   ├── target_list.html
-│   │   ├── target_detail.html
-│   │   ├── subdomains.html
-│   │   ├── dns_records.html
-│   │   ├── comparison_list.html
-│   │   └── comparison_detail.html
-│   ├── member2_assessment/
-│   │   ├── profile_list.html
-│   │   ├── scope_list.html
-│   │   ├── results.html
-│   │   ├── finding_list.html
-│   │   ├── finding_detail.html
-│   │   └── correlations.html
-│   └── member3_operations/
-│       ├── scan_list.html
-│       ├── scan_detail.html
-│       ├── dashboard.html
-│       ├── notifications.html
-│       └── report_list.html
+├── 🎨 templates/                     ALL HTML TEMPLATES
+│   ├── 🖼️  base.html                  Master layout
+│   ├── 📁 shared/
+│   │   └── 📝 form.html               Reusable form template
+│   ├── 📁 registration/
+│   │   └── 🔐 login.html
+│   ├── 📁 member1_core/
+│   │   ├── 👤 profile.html
+│   │   ├── 🎯 target_list.html
+│   │   ├── 📊 target_detail.html
+│   │   ├── 🌐 subdomains.html
+│   │   ├── 📡 dns_records.html
+│   │   ├── ⚖️  comparison_list.html
+│   │   └── 🔍 comparison_detail.html
+│   ├── 📁 member2_assessment/
+│   │   ├── 📋 profile_list.html
+│   │   ├── 🎚️  scope_list.html
+│   │   ├── 📊 results.html
+│   │   ├── 🐛 finding_list.html
+│   │   ├── 🔎 finding_detail.html
+│   │   └── 🔗 correlations.html
+│   └── 📁 member3_operations/
+│       ├── 🚀 scan_list.html
+│       ├── 📈 scan_detail.html
+│       ├── 📊 dashboard.html
+│       ├── 🔔 notifications.html
+│       └── 📄 report_list.html
 │
-├── media/                        user uploads (gitignored)
-│   └── .gitkeep
+├── 🖼️  media/                        User uploads (gitignored)
+│   └── 📌 .gitkeep
 │
-└── reports/                      generated PDF reports
-    └── .gitkeep
+└── 📄 reports/                       Generated PDF reports
+    └── 📌 .gitkeep
 ```
 ## 👥  Members
 
