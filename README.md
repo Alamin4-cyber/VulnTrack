@@ -56,105 +56,101 @@ from a centralized dashboard.
 | Reporting | ReportLab |
 | Deployment | Linux, Docker |
 
-### Project Structure
+## 📁 Project Structure
 
+```
 VulnTrack/
 │
-├── 📄 manage.py
-├── 📄 requirements.txt
-├── 📄 .gitignore
-├── 📄 README.md
-├── 📄 db.sqlite3                    (migrate এর পর তৈরি হবে)
+├── manage.py
+├── requirements.txt
+├── .gitignore
+├── README.md
+├── db.sqlite3                    (generated after migrate)
 │
-├── 📁 vulntrack/                    (Django project)
-│   ├── 📄 __init__.py
-│   ├── 📄 settings.py
-│   ├── 📄 urls.py
-│   └── 📄 wsgi.py
+├── vulntrack/                    Django project config
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
 │
-├── 📁 member1_core/                 (M1: Users · Targets · Recon · Comparison)
-│   ├── 📄 __init__.py
-│   ├── 📄 apps.py
-│   ├── 📄 signals.py
-│   ├── 📄 utils.py
-│   ├── 📄 models.py
-│   ├── 📄 forms.py
-│   ├── 📄 views.py
-│   ├── 📄 urls.py
-│   ├── 📄 comparison.py
-│   ├── 📄 admin.py
-│   └── 📁 migrations/
-│       └── 📄 __init__.py
+├── member1_core/                 M1: Users · Targets · Recon · Comparison
+│   ├── __init__.py
+│   ├── apps.py
+│   ├── signals.py
+│   ├── utils.py
+│   ├── models.py
+│   ├── forms.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── comparison.py
+│   ├── admin.py
+│   └── migrations/
+│       └── __init__.py
 │
-├── 📁 member2_assessment/           (M2: Scope · Profiles · Recon · Findings)
-│   ├── 📄 __init__.py
-│   ├── 📄 apps.py
-│   ├── 📄 models.py
-│   ├── 📄 forms.py
-│   ├── 📄 views.py
-│   ├── 📄 urls.py
-│   ├── 📄 services.py
-│   ├── 📄 admin.py
-│   └── 📁 migrations/
-│       └── 📄 __init__.py
+├── member2_assessment/           M2: Scope · Profiles · Findings
+│   ├── __init__.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── forms.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── services.py
+│   ├── admin.py
+│   └── migrations/
+│       └── __init__.py
 │
-├── 📁 member3_operations/           (M3: Scans · Dashboard · Reports · AI)
-│   ├── 📄 __init__.py
-│   ├── 📄 apps.py
-│   ├── 📄 models.py
-│   ├── 📄 forms.py
-│   ├── 📄 views.py
-│   ├── 📄 urls.py
-│   ├── 📄 admin.py
-│   ├── 📄 tasks.py
-│   ├── 📁 services/
-│   │   ├── 📄 __init__.py
-│   │   ├── 📄 scanner.py
-│   │   ├── 📄 queue.py
-│   │   ├── 📄 reporting.py
-│   │   └── 📄 ai.py
-│   └── 📁 migrations/
-│       └── 📄 __init__.py
+├── member3_operations/           M3: Scans · Dashboard · Reports · AI
+│   ├── __init__.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── forms.py
+│   ├── views.py
+│   ├── urls.py
+│   ├── admin.py
+│   ├── tasks.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── scanner.py
+│   │   ├── queue.py
+│   │   ├── reporting.py
+│   │   └── ai.py
+│   └── migrations/
+│       └── __init__.py
 │
-├── 📁 templates/
-│   ├── 📄 base.html
-│   │
-│   ├── 📁 shared/
-│   │   └── 📄 form.html
-│   │
-│   ├── 📁 registration/
-│   │   └── 📄 login.html
-│   │
-│   ├── 📁 member1_core/
-│   │   ├── 📄 profile.html
-│   │   ├── 📄 target_list.html
-│   │   ├── 📄 target_detail.html
-│   │   ├── 📄 subdomains.html
-│   │   ├── 📄 dns_records.html
-│   │   ├── 📄 comparison_list.html
-│   │   └── 📄 comparison_detail.html
-│   │
-│   ├── 📁 member2_assessment/
-│   │   ├── 📄 profile_list.html
-│   │   ├── 📄 scope_list.html
-│   │   ├── 📄 results.html
-│   │   ├── 📄 finding_list.html
-│   │   ├── 📄 finding_detail.html
-│   │   └── 📄 correlations.html
-│   │
-│   └── 📁 member3_operations/
-│       ├── 📄 scan_list.html
-│       ├── 📄 scan_detail.html
-│       ├── 📄 dashboard.html
-│       ├── 📄 notifications.html
-│       └── 📄 report_list.html
+├── templates/
+│   ├── base.html
+│   ├── shared/
+│   │   └── form.html
+│   ├── registration/
+│   │   └── login.html
+│   ├── member1_core/
+│   │   ├── profile.html
+│   │   ├── target_list.html
+│   │   ├── target_detail.html
+│   │   ├── subdomains.html
+│   │   ├── dns_records.html
+│   │   ├── comparison_list.html
+│   │   └── comparison_detail.html
+│   ├── member2_assessment/
+│   │   ├── profile_list.html
+│   │   ├── scope_list.html
+│   │   ├── results.html
+│   │   ├── finding_list.html
+│   │   ├── finding_detail.html
+│   │   └── correlations.html
+│   └── member3_operations/
+│       ├── scan_list.html
+│       ├── scan_detail.html
+│       ├── dashboard.html
+│       ├── notifications.html
+│       └── report_list.html
 │
-├── 📁 media/                        (user uploads - gitignored)
-│   └── 📄 .gitkeep
+├── media/                        user uploads (gitignored)
+│   └── .gitkeep
 │
-└── 📁 reports/                      (generated PDFs)
-    └── 📄 .gitkeep
-
+└── reports/                      generated PDF reports
+    └── .gitkeep
+```
 ## 👥  Members
 
     MD.Al-amin Hosen
