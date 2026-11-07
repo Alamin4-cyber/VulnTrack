@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Scope rules — {{ target.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Scope rules — {{ target.name }}</h3>
+  <a class="btn btn-primary" href="{% url 'member2_assessment:scope_create' target.pk %}">Add rule</a>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Type</th><th>Pattern</th><th>Notes</th><th>Created by</th><th></th></tr></thead>
+      <tbody>
+        {% for rule in rules %}
+          <tr>
+            <td>
+              {% if rule.rule_type == 'allow' %}<span class="badge bg-success">allow</span>
+              {% else %}<span class="badge bg-danger">exclude</span>{% endif %}
+            </td>
+            <td><code>{{ rule.pattern }}</code></td>
+            <td class="small">{{ rule.notes }}</td>
+            <td>{{ rule.created_by.username|default:"-" }}</td>
+            <td class="text-nowrap">
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'member2_assessment:scope_edit' rule.pk %}">Edit</a>
+              <form method="post" action="{% url 'member2_assessment:scope_delete' rule.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-muted">No scope rules defined.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<a class="btn btn-link mt-2" href="{% url 'member1_core:target_detail' target.pk %}">Back to target</a>
+{% endblock %}
