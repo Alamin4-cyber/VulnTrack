@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h3 class="mb-3">Dashboard</h3>
+<div class="row g-3 mb-3">
+  <div class="col-md-3"><div class="card"><div class="card-body"><h6>Targets</h6><h3>{{ target_count }}</h3></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body"><h6>Scans</h6><h3>{{ scan_count }}</h3></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body"><h6>Findings</h6><h3>{{ finding_count }}</h3><div class="small text-muted">{{ open_finding_count }} open</div></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body"><h6>Critical / High</h6><h3>{{ critical_count }} / {{ high_count }}</h3></div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card"><div class="card-header">Severity</div>
+      <ul class="list-group list-group-flush">
+        {% for label, count in severity_rows %}
+          <li class="list-group-item d-flex justify-content-between"><span>{{ label }}</span><span class="badge bg-secondary">{{ count }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="card mt-3"><div class="card-header">Notifications</div>
+      <ul class="list-group list-group-flush">
+        {% for n in notifications %}
+          <li class="list-group-item small"><span class="badge bg-{{ n.level }}">{{ n.level }}</span> {{ n.title }}</li>
+        {% empty %}<li class="list-group-item text-muted">No unread.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card"><div class="card-header d-flex justify-content-between">
+      <span>Recent scans</span><a class="small" href="{% url 'member3_operations:scan_list' %}">View all</a>
+    </div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>#</th><th>Target</th><th>Status</th><th>Progress</th></tr></thead>
+        <tbody>
+          {% for scan in recent_scans %}
+            <tr>
+              <td><a href="{% url 'member3_operations:scan_detail' scan.pk %}">#{{ scan.id }}</a></td>
+              <td>{{ scan.target.name }}</td>
+              <td><span class="badge bg-{{ scan.status_css }}">{{ scan.get_status_display }}</span></td>
+              <td>{{ scan.progress }}%</td>
+            </tr>
+          {% empty %}<tr><td colspan="4" class="text-muted">No scans.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card mt-3"><div class="card-header">Recent findings</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Severity</th><th>Title</th><th>Target</th></tr></thead>
+        <tbody>
+          {% for f in recent_findings %}
+            <tr>
+              <td><span class="badge bg-{{ f.severity_css }}">{{ f.get_severity_display }}</span></td>
+              <td><a href="{% url 'member2_assessment:finding_detail' f.pk %}">{{ f.title }}</a></td>
+              <td>{{ f.target.name }}</td>
+            </tr>
+          {% empty %}<tr><td colspan="3" class="text-muted">No findings.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

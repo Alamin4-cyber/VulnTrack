@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Scans{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Scans</h3>
+  <a class="btn btn-primary" href="{% url 'member3_operations:scan_create' %}">New scan</a>
+</div>
+<div class="card"><div class="table-responsive">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>#</th><th>Target</th><th>Profile</th><th>Status</th><th>Progress</th><th>By</th><th>Created</th></tr></thead>
+    <tbody>
+      {% for scan in scans %}
+        <tr>
+          <td><a href="{% url 'member3_operations:scan_detail' scan.pk %}">#{{ scan.id }}</a></td>
+          <td>{{ scan.target.name }}</td>
+          <td>{{ scan.profile.name|default:"Default" }}</td>
+          <td><span class="badge bg-{{ scan.status_css }}">{{ scan.get_status_display }}</span></td>
+          <td>{{ scan.progress }}%</td>
+          <td>{{ scan.initiated_by.username|default:"-" }}</td>
+          <td>{{ scan.created_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+      {% empty %}<tr><td colspan="7" class="text-muted">No scans.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div></div>
+{% endblock %}
