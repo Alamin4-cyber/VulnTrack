@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Scan #{{ scan.id }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h3 class="mb-1">Scan #{{ scan.id }} — {{ scan.target.name }}</h3>
+    <p class="text-muted mb-0"><code>{{ scan.target.domain }}</code> ·
+      <span class="badge bg-{{ scan.status_css }}">{{ scan.get_status_display }}</span>
+      {% if scan.profile %}· {{ scan.profile.name }}{% endif %}
+    </p>
+  </div>
+<div class="d-flex gap-2">
+  <form method="post" action="{% url 'member3_operations:scan_run' scan.pk %}">
+    {% csrf_token %}<button class="btn btn-primary btn-sm">Run scan</button>
+  </form>
+  <form method="post" action="{% url 'member3_operations:report_generate' scan.pk %}">
+    {% csrf_token %}<button class="btn btn-outline-success btn-sm">Generate PDF report</button>
+  </form>
+</div>
+</div>
+<div class="progress mb-2" style="height:22px;">
+  <div class="progress-bar" style="width:{{ scan.progress }}%;">{{ scan.progress }}%</div>
+</div>
+<p class="small text-muted">{{ scan.current_stage|default:"-" }}</p>
+{% if scan.summary %}<div class="alert alert-info">{{ scan.summary }}</div>{% endif %}
+{% if scan.error_message %}<div class="alert alert-danger">{{ scan.error_message }}</div>{% endif %}
+<div class="card mt-3">
+  <div class="card-header">Scan log</div>
+  <ul class="list-group list-group-flush" style="max-height:400px;overflow-y:auto;">
+    {% for log in logs %}
+      <li class="list-group-item small">
+        <span class="badge bg-secondary">{{ log.level }}</span> {{ log.message }}
+        <div class="text-muted">{{ log.created_at|date:"H:i:s" }}</div>
+      </li>
+    {% empty %}<li class="list-group-item text-muted">No log entries.</li>{% endfor %}
+  </ul>
+</div>
+<div class="row g-3 mt-3">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between">
+        <span>Findings</span>
+        <a class="small" href="{% url 'member2_assessment:results' scan.id %}">Open full results</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Severity</th><th>Title</th><th>Host</th></tr></thead>
+          <tbody>
+            {% for f in scan_findings %}
+              <tr>
+                <td><span class="badge bg-{{ f.severity_css }}">{{ f.get_severity_display }}</span></td>
+                <td><a href="{% url 'member2_assessment:finding_detail' f.pk %}">{{ f.title }}</a></td>
+                <td>{{ f.host.hostname|default:"-" }}</td>
+              </tr>
+            {% empty %}<tr><td colspan="3" class="text-muted">No findings. Run the scan.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
