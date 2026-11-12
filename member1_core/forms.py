@@ -32,6 +32,13 @@ class RegisterForm(BootstrapMixin, UserCreationForm):
         model = User
         fields = ("username", "email", "role", "organization")
 
+    # 👇 NEW: Filter out 'admin' role from registration form 👇
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['role'].choices = [
+            (value, display) for value, display in UserProfile.ROLE_CHOICES if value != 'admin'
+        ]
+
 
 class ProfileForm(BootstrapMixin, forms.ModelForm):
     first_name = forms.CharField(required=False)
