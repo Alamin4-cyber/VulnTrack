@@ -5,7 +5,6 @@ app_name = "member3_operations"
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
-
     path("scans/", views.scan_list, name="scan_list"),
     path("scans/new/", views.scan_create, name="scan_create"),
     path("scans/<int:pk>/", views.scan_detail, name="scan_detail"),

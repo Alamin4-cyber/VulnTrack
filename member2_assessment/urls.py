@@ -12,4 +12,7 @@ urlpatterns = [
     path("targets/<int:target_id>/scopes/add/", views.scope_create, name="scope_create"),
     path("scopes/<int:pk>/edit/", views.scope_edit, name="scope_edit"),
     path("scopes/<int:pk>/delete/", views.scope_delete, name="scope_delete"),
+    path("results/<int:scan_id>/", views.results, name="results"),
+
+    path("findings/<int:pk>/", views.finding_detail, name="finding_detail"),
 ]

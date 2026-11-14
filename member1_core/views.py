@@ -124,6 +124,43 @@ def target_detail(request, pk):
     scans = t.scans.select_related("profile").order_by("-created_at")[:10]
     role = getattr(getattr(request.user, "profile", None), "role", "")
     can_manage = request.user.is_superuser or role in ("admin", "analyst") or t.owner_id == request.user.id
+    
+    # Pass all required context, including subdomains and dns_records (Week 2 features)
     return render(request, "member1_core/target_detail.html", {
-        "target": t, "scans": scans, "can_manage": can_manage, "can_run": can_scan(request.user),
+        "target": t, 
+        "scans": scans, 
+        "can_manage": can_manage, 
+        "can_run": can_scan(request.user),
+        "subdomains": t.subdomains.all()[:50],    #  Added Week 2 Context
+        "dns_records": t.dns_records.all()[:50],  #  Added Week 2 Context
+    })
+@login_required
+def subdomain_list(request, pk):
+    target = get_object_or_404(visible_targets(request.user), pk=pk)
+    return render(request, "member1_core/subdomains.html", {
+        "target": target, "subdomains": target.subdomains.all()
+    })
+
+@login_required
+def dns_list(request, pk):
+    target = get_object_or_404(visible_targets(request.user), pk=pk)
+    return render(request, "member1_core/dns_records.html", {
+        "target": target, "dns_records": target.dns_records.all()
+    })
+#==========week 2 views========
+@login_required
+def subdomain_list(request, pk):
+    target = get_object_or_404(visible_targets(request.user), pk=pk)
+    return render(request, "member1_core/subdomains.html", {
+        "target": target, 
+        "subdomains": target.subdomains.all()
+    })
+
+
+@login_required
+def dns_list(request, pk):
+    target = get_object_or_404(visible_targets(request.user), pk=pk)
+    return render(request, "member1_core/dns_records.html", {
+        "target": target, 
+        "dns_records": target.dns_records.all()
     })

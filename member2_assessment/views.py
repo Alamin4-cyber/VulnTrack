@@ -7,6 +7,8 @@ from member1_core.utils import role_required, visible_targets
 
 from .forms import ScanProfileForm, ScopeRuleForm
 from .models import ScanProfile, ScopeRule
+from .models import Host, VulnerabilityFinding
+from django.core.exceptions import PermissionDenied
 
 
 @login_required
@@ -90,3 +92,25 @@ def scope_delete(request, pk):
         rule.delete()
         messages.success(request, "Scope rule deleted.")
     return redirect("member2_assessment:scope_list", target_id=target_id)
+@login_required
+def results(request, scan_id):
+    from member3_operations.models import ScanJob
+    scan = get_object_or_404(ScanJob.objects.select_related("target", "profile"), pk=scan_id)
+    
+    if not visible_targets(request.user).filter(pk=scan.target_id).exists():
+        raise PermissionDenied
+        
+    hosts = Host.objects.filter(scan_id=scan.id).prefetch_related("ports", "technologies", "endpoints")
+    findings = VulnerabilityFinding.objects.filter(scan_id=scan.id).select_related("host")
+    
+    return render(request, "member2_assessment/results.html", {
+        "scan": scan, "hosts": hosts, "findings": findings
+    })
+@login_required
+def finding_detail(request, pk):
+    # Fetch the finding and ensure the user has permission to see it
+    finding = get_object_or_404(
+        VulnerabilityFinding.objects.filter(target__in=visible_targets(request.user)).select_related("target", "host", "endpoint"),
+        pk=pk,
+    )
+    return render(request, "member2_assessment/finding_detail.html", {"finding": finding})

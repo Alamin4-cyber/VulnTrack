@@ -122,3 +122,5 @@ class VulnerabilityFinding(models.Model):
     @property
     def severity_css(self):
         return {"critical": "danger", "high": "warning", "medium": "info", "low": "secondary", "info": "secondary"}.get(self.severity, "secondary")
+
+    

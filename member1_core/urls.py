@@ -17,4 +17,7 @@ urlpatterns = [
     path("targets/<int:pk>/edit/", views.target_edit, name="target_edit"),
     path("targets/<int:pk>/delete/", views.target_delete, name="target_delete"),
     path("targets/<int:pk>/verify/", views.target_verify, name="target_verify"),
+    #=========week 2 urls========
+    path("targets/<int:pk>/subdomains/", views.subdomain_list, name="subdomain_list"),
+    path("targets/<int:pk>/dns/", views.dns_list, name="dns_list"),
 ]

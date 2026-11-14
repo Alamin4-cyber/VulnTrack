@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Scan results #{{ scan.id }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3>Scan results #{{ scan.id }}</h3>
+    <p class="text-muted mb-0">{{ scan.target.name }} ({{ scan.target.domain }}) · status: {{ scan.get_status_display }}</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'member3_operations:scan_detail' scan.id %}">Back to scan</a>
+</div>
+
+<!-- Hosts, Ports, Technologies and Endpoints Section -->
+<div class="card mb-3">
+  <div class="card-header">Hosts, ports, technologies and endpoints</div>
+  <div class="card-body">
+    {% for host in hosts %}
+      <div class="border rounded p-3 mb-3">
+        <h6 class="mb-2"><code>{{ host.hostname }}</code> <span class="badge bg-success">alive</span></h6>
+        <div class="row g-3">
+          <!-- Ports -->
+          <div class="col-md-4">
+            <strong class="small">Ports</strong>
+            <ul class="list-unstyled small mb-0">
+              {% for port in host.ports.all %}
+                <li>{{ port.number }}/{{ port.protocol }} — {{ port.service }} ({{ port.version }})</li>
+              {% empty %}<li class="text-muted">none</li>{% endfor %}
+            </ul>
+          </div>
+          <!-- Technologies -->
+          <div class="col-md-4">
+            <strong class="small">Technologies</strong>
+            <ul class="list-unstyled small mb-0">
+              {% for technology in host.technologies.all %}
+                <li>{{ technology.name }} {{ technology.version }} <span class="text-muted">({{ technology.category }})</span></li>
+              {% empty %}<li class="text-muted">none</li>{% endfor %}
+            </ul>
+          </div>
+          <!-- Endpoints -->
+          <div class="col-md-4">
+            <strong class="small">Endpoints</strong>
+            <ul class="list-unstyled small mb-0">
+              {% for endpoint in host.endpoints.all %}
+                <li><code>{{ endpoint.url }}</code> ({{ endpoint.status_code }})</li>
+              {% empty %}<li class="text-muted">none</li>{% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">No hosts recorded.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Findings (Vulnerabilities) Section -->
+<div class="card">
+  <div class="card-header">Findings</div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Severity</th><th>Title</th><th>Host</th><th>Confidence</th></tr></thead>
+      <tbody>
+        {% for finding in findings %}
+          <tr>
+            <td><span class="badge bg-{{ finding.severity_css }}">{{ finding.get_severity_display }}</span></td>
+            <td><a href="{% url 'member2_assessment:finding_detail' finding.pk %}">{{ finding.title }}</a></td>
+            <td>{{ finding.host.hostname|default:"-" }}</td>
+            <td>{{ finding.get_confidence_display }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-muted">No findings recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

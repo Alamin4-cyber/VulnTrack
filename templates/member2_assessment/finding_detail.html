@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}{{ finding.title }}{% endblock %}
+{% block content %}
+<h3>{{ finding.title }}</h3>
+<p><strong>Severity:</strong> <span class="badge bg-{{ finding.severity_css }}">{{ finding.get_severity_display }}</span></p>
+<p><strong>Target:</strong> {{ finding.target.name }}</p>
+<p><strong>Host:</strong> {{ finding.host.hostname|default:"-" }}</p>
+<p><strong>Description:</strong><br>{{ finding.description }}</p>
+
+<a class="btn btn-link mt-2" href="{% url 'member3_operations:scan_detail' finding.scan_id %}">Back to Scan</a>
+{% endblock %}
