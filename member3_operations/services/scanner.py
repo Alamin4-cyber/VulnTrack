@@ -1,10 +1,9 @@
+import requests
 from django.utils import timezone
 
 from member1_core.models import DNSRecord, Subdomain
 from member2_assessment.models import Endpoint, Host, Port, Technology, VulnerabilityFinding
 from member3_operations.models import Evidence, Notification, Remediation, ScanJob, ScanLog
-
-DEMO_PREFIXES = ["www", "api", "mail"]
 
 COMMON_FINDINGS = [
     {"title": "Missing Content-Security-Policy header",
@@ -69,6 +68,27 @@ def _create_finding(scan, target, host, spec):
     return f
 
 
+def fetch_subdomains_from_crtsh(domain):
+    """Fetch real subdomains using crt.sh Certificate Transparency API."""
+    subdomains = set()
+    try:
+        url = f"https://crt.sh/?q=%25.{domain}&output=json"
+        response = requests.get(url, timeout=20)
+        if response.status_code == 200:
+            certs = response.json()
+            for cert in certs:
+                name_value = cert.get("name_value", "")
+                for line in name_value.split("\n"):
+                    line = line.strip().lower()
+                    # Avoid wildcard (*.domain.com) and ensure it's a valid subdomain
+                    if line and "*" not in line and line.endswith(domain):
+                        subdomains.add(line)
+    except Exception as e:
+        print(f"Error fetching from crt.sh: {e}")
+    
+    return sorted(list(subdomains))
+
+
 def execute_scan(scan_id):
     scan = ScanJob.objects.select_related("target", "initiated_by").get(pk=scan_id)
     target = scan.target
@@ -87,27 +107,45 @@ def execute_scan(scan_id):
         Host.objects.filter(scan_id=scan.id).delete()
 
         domain = target.domain.lower()
-        _stage(scan, 10, "Subdomain enumeration")
-        names = [domain] + [f"{p}.{domain}" for p in DEMO_PREFIXES]
-        for i, name in enumerate(names):
+        
+        # --- STAGE 1: Subdomain Enumeration using crt.sh ---
+        _stage(scan, 10, "Subdomain enumeration (crt.sh)")
+        
+        real_subdomains = fetch_subdomains_from_crtsh(domain)
+        
+        # Fallback if crt.sh returns nothing
+        if not real_subdomains:
+            real_subdomains = [domain]
+        
+        # Ensure the root domain is in the list
+        if domain not in real_subdomains:
+            real_subdomains.insert(0, domain)
+
+        # Save subdomains to database (Member 1's model)
+        for i, name in enumerate(real_subdomains):
             sub, created = Subdomain.objects.update_or_create(
                 target=target, name=name,
-                defaults={"ip_address": f"192.0.2.{10+i}", "source": "subfinder (demo)",
+                defaults={"ip_address": f"192.0.2.{10+(i%200)}", "source": "crt.sh (Certificate Transparency)",
                           "is_active": True, "last_scan_id": scan.id})
             if created:
                 Subdomain.objects.filter(pk=sub.pk).update(first_scan_id=scan.id)
 
-        for i, name in enumerate(names):
+            # Also save a DNS record for each to populate the UI
             DNSRecord.objects.update_or_create(
                 target=target, name=name, record_type="A",
-                defaults={"value": f"192.0.2.{10+i}", "ttl": 300, "scan_id": scan.id})
+                defaults={"value": f"192.0.2.{10+(i%200)}", "ttl": 300, "scan_id": scan.id})
 
+        # --- STAGE 2: Port and service discovery ---
         _stage(scan, 35, "Port and service discovery")
         hosts = []
-        for i, name in enumerate(names):
+        
+        # Limit the port scanning to first 5 subdomains to prevent the system from hanging
+        scan_targets = real_subdomains[:5]
+        
+        for i, name in enumerate(scan_targets):
             host, _ = Host.objects.update_or_create(
                 scan_id=scan.id, hostname=name,
-                defaults={"target": target, "ip_address": f"192.0.2.{10+i}", "is_alive": True})
+                defaults={"target": target, "ip_address": f"192.0.2.{10+(i%200)}", "is_alive": True})
             hosts.append(host)
             for p in [22, 80, 443]:
                 svc = {22: "ssh", 80: "http", 443: "https"}[p]
@@ -116,6 +154,7 @@ def execute_scan(scan_id):
             Technology.objects.create(host=host, name="nginx", version="1.18", category="web server")
             Endpoint.objects.create(host=host, url=f"http://{name}/", method="GET", status_code=200)
 
+        # --- STAGE 3: Vulnerability assessment ---
         _stage(scan, 65, "Vulnerability assessment")
         for i, host in enumerate(hosts):
             for spec in COMMON_FINDINGS:
@@ -131,7 +170,8 @@ def execute_scan(scan_id):
         scan.finished_at = timezone.now()
         scan.summary = f"{count} findings across {len(hosts)} hosts."
         scan.save()
-        _log(scan, "Scan completed.", "success")
+        _log(scan, f"Scan completed. Found {len(real_subdomains)} subdomains from crt.sh", "success")
+        
         if scan.initiated_by_id:
             Notification.objects.create(
                 user=scan.initiated_by, title=f"Scan #{scan.id} completed",

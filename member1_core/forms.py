@@ -6,6 +6,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
 from .models import Target, UserProfile
+from member3_operations.models import ScanJob
 
 
 class BootstrapMixin:
@@ -93,3 +94,19 @@ class TargetForm(BootstrapMixin, forms.ModelForm):
         if c.get("authorization_confirmed") and not c.get("authorization_reference"):
             self.add_error("authorization_reference", "Provide an authorization reference.")
         return c
+
+
+# 👇 WEEK 3: Comparison Form (Properly aligned outside TargetForm) 👇
+class ComparisonForm(BootstrapMixin, forms.Form):
+    target = forms.ModelChoiceField(queryset=Target.objects.none())
+    base_scan = forms.ModelChoiceField(queryset=ScanJob.objects.none(), label="Baseline scan")
+    compare_scan = forms.ModelChoiceField(queryset=ScanJob.objects.none(), label="Comparison scan")
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .utils import visible_targets
+        targets = visible_targets(user)
+        self.fields["target"].queryset = targets
+        scans = ScanJob.objects.filter(target__in=targets).order_by("-created_at")
+        self.fields["base_scan"].queryset = scans
+        self.fields["compare_scan"].queryset = scans

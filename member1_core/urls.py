@@ -20,4 +20,8 @@ urlpatterns = [
     #=========week 2 urls========
     path("targets/<int:pk>/subdomains/", views.subdomain_list, name="subdomain_list"),
     path("targets/<int:pk>/dns/", views.dns_list, name="dns_list"),
+    #==========week 3 urls========
+        path("comparisons/", views.comparison_list, name="comparison_list"),
+    path("comparisons/new/", views.comparison_create, name="comparison_create"),
+    path("comparisons/<int:pk>/", views.comparison_detail, name="comparison_detail"),
 ]

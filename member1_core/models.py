@@ -79,3 +79,30 @@ class DNSRecord(models.Model):
 
     def __str__(self):
         return f"{self.name} {self.record_type} {self.value}"
+    # ===== WEEK 3 MODELS =====
+class AssetChange(models.Model):
+    CHANGE_TYPES = (
+        ("new", "New asset"), ("removed", "Removed asset"), ("changed", "Changed asset"),
+    )
+    target = models.ForeignKey(Target, on_delete=models.CASCADE, related_name="asset_changes")
+    asset_type = models.CharField(max_length=50)
+    identifier = models.CharField(max_length=255)
+    change_type = models.CharField(max_length=20, choices=CHANGE_TYPES)
+    scan_id = models.IntegerField(null=True, blank=True)
+    detected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-detected_at"]
+
+
+class ScanComparison(models.Model):
+    target = models.ForeignKey(Target, on_delete=models.CASCADE, related_name="comparisons")
+    base_scan_id = models.PositiveIntegerField()
+    compare_scan_id = models.PositiveIntegerField()
+    created_by = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    summary = models.TextField(blank=True)
+    result = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ["-created_at"]

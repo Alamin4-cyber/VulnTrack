@@ -11,6 +11,10 @@ from .models import Target, UserProfile
 from .utils import can_scan, visible_targets
 
 
+from .comparison import build_comparison_data
+from .forms import ComparisonForm
+from .models import ScanComparison
+
 def home(request):
     if request.user.is_authenticated:
         return redirect("member1_core:target_list")
@@ -164,3 +168,36 @@ def dns_list(request, pk):
         "target": target, 
         "dns_records": target.dns_records.all()
     })
+
+@login_required
+def comparison_list(request):
+    comparisons = ScanComparison.objects.filter(target__in=visible_targets(request.user)).select_related("target", "created_by")
+    return render(request, "member1_core/comparison_list.html", {"comparisons": comparisons})
+
+
+@login_required
+def comparison_create(request):
+    form = ComparisonForm(request.POST or None, user=request.user)
+    if request.method == "POST" and form.is_valid():
+        target = form.cleaned_data["target"]
+        base = form.cleaned_data["base_scan"]
+        compare = form.cleaned_data["compare_scan"]
+        data, summary = build_comparison_data(target, base, compare)
+        comparison = ScanComparison.objects.create(
+            target=target, base_scan_id=base.id, compare_scan_id=compare.id,
+            created_by=request.user, summary=summary, result=data,
+        )
+        messages.success(request, "Comparison created.")
+        return redirect("member1_core:comparison_detail", pk=comparison.pk)
+    return render(request, "shared/form.html", {
+        "form": form, "title": "Compare two scans",
+        "cancel_url": reverse("member1_core:comparison_list"),
+    })
+
+
+@login_required
+def comparison_detail(request, pk):
+    comparison = get_object_or_404(
+        ScanComparison.objects.filter(target__in=visible_targets(request.user)).select_related("target"), pk=pk,
+    )
+    return render(request, "member1_core/comparison_detail.html", {"comparison": comparison})
