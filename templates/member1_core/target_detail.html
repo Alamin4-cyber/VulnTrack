@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}{{ target.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h3 class="mb-1">{{ target.name }}</h3>
+    <div class="text-muted"><code>{{ target.domain }}</code> · owner {{ target.owner.username }}</div>
+  </div>
+  <div class="d-flex gap-2">
+    {% if can_manage %}
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'member1_core:target_edit' target.pk %}">Edit</a>
+    {% endif %}
+    {% if can_run %}
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'member2_assessment:scope_create' target.pk %}">Add scope rule</a>
+      <a class="btn btn-primary btn-sm" href="{% url 'member3_operations:scan_create' %}">New scan</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <!-- Authorization Card -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6>Authorization</h6>
+        {% if target.is_authorized %}
+          <span class="badge bg-success mb-2">Authorized</span>
+          <p class="mb-1 small">Reference: {{ target.authorization_reference|default:"-" }}</p>
+          <p class="mb-0 small text-muted">Verified {{ target.authorized_at|date:"Y-m-d H:i" }}</p>
+        {% else %}
+          <span class="badge bg-warning text-dark mb-2">Not verified</span>
+          {% if can_run %}
+            <form method="post" action="{% url 'member1_core:target_verify' target.pk %}" class="mt-2">
+              {% csrf_token %}
+              <div class="input-group input-group-sm">
+                <input class="form-control" name="reference" placeholder="Authorization reference">
+                <button class="btn btn-success">Verify</button>
+              </div>
+            </form>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- Recent Scans Card -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6>Scans</h6>
+        <ul class="list-unstyled mb-0 small">
+          {% for scan in scans %}
+            <li>
+              <a href="{% url 'member3_operations:scan_detail' scan.pk %}">Scan #{{ scan.id }}</a>
+              <span class="badge bg-{{ scan.status_css }}">{{ scan.get_status_display }}</span>
+            </li>
+          {% empty %}
+            <li class="text-muted">No scans yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Subdomains and DNS Records (From Week 2) -->
+<div class="row g-3 mt-3">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between">
+        <span>Subdomains</span>
+        <a class="small" href="{% url 'member1_core:subdomain_list' target.pk %}">View all</a>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for subdomain in subdomains %}
+          <li class="list-group-item small d-flex justify-content-between">
+            <code>{{ subdomain.name }}</code>
+            <span class="badge {% if subdomain.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+              {% if subdomain.is_active %}active{% else %}inactive{% endif %}
+            </span>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">No subdomains discovered yet. Run a scan.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between">
+        <span>DNS records</span>
+        <a class="small" href="{% url 'member1_core:dns_list' target.pk %}">View all</a>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for record in dns_records %}
+          <li class="list-group-item small"><code>{{ record.name }}</code> {{ record.record_type }} → {{ record.value }}</li>
+        {% empty %}
+          <li class="list-group-item text-muted">No DNS records yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Scan profiles{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Scan profiles</h3>
+  <a class="btn btn-primary" href="{% url 'member2_assessment:profile_create' %}">Create profile</a>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Name</th><th>Recon</th><th>Ports</th><th>Vuln scan</th><th>Created by</th><th></th></tr></thead>
+      <tbody>
+        {% for profile in profiles %}
+          <tr>
+            <td>{{ profile.name }}{% if profile.is_default %} <span class="badge bg-info text-dark">default</span>{% endif %}</td>
+            <td>{{ profile.enable_subdomain_enum|yesno:"yes,no" }}</td>
+            <td>{{ profile.enable_port_scan|yesno:"yes,no" }} ({{ profile.port_range }})</td>
+            <td>{{ profile.enable_vuln_scan|yesno:"yes,no" }}</td>
+            <td>{{ profile.created_by.username|default:"-" }}</td>
+            <td><a class="btn btn-sm btn-outline-secondary" href="{% url 'member2_assessment:profile_edit' profile.pk %}">Edit</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-muted">No scan profiles yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

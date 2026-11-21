@@ -40,3 +40,69 @@ class Target(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.domain})"
+
+# ===== WEEK 2 MODELS =====
+class Subdomain(models.Model):
+    target = models.ForeignKey(Target, on_delete=models.CASCADE, related_name="subdomains")
+    name = models.CharField(max_length=255)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    source = models.CharField(max_length=100, blank=True)
+    is_active = models.BooleanField(default=True)
+    first_scan_id = models.IntegerField(null=True, blank=True)
+    last_scan_id = models.IntegerField(null=True, blank=True)
+    first_seen = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("target", "name")
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class DNSRecord(models.Model):
+    RECORD_TYPES = (
+        ("A", "A"), ("AAAA", "AAAA"), ("CNAME", "CNAME"),
+        ("MX", "MX"), ("TXT", "TXT"), ("NS", "NS"),
+    )
+    target = models.ForeignKey(Target, on_delete=models.CASCADE, related_name="dns_records")
+    name = models.CharField(max_length=255)
+    record_type = models.CharField(max_length=10, choices=RECORD_TYPES, default="A")
+    value = models.CharField(max_length=500)
+    ttl = models.IntegerField(default=300)
+    scan_id = models.IntegerField(null=True, blank=True)
+    collected_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name", "record_type"]
+
+    def __str__(self):
+        return f"{self.name} {self.record_type} {self.value}"
+    # ===== WEEK 3 MODELS =====
+class AssetChange(models.Model):
+    CHANGE_TYPES = (
+        ("new", "New asset"), ("removed", "Removed asset"), ("changed", "Changed asset"),
+    )
+    target = models.ForeignKey(Target, on_delete=models.CASCADE, related_name="asset_changes")
+    asset_type = models.CharField(max_length=50)
+    identifier = models.CharField(max_length=255)
+    change_type = models.CharField(max_length=20, choices=CHANGE_TYPES)
+    scan_id = models.IntegerField(null=True, blank=True)
+    detected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-detected_at"]
+
+
+class ScanComparison(models.Model):
+    target = models.ForeignKey(Target, on_delete=models.CASCADE, related_name="comparisons")
+    base_scan_id = models.PositiveIntegerField()
+    compare_scan_id = models.PositiveIntegerField()
+    created_by = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    summary = models.TextField(blank=True)
+    result = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ["-created_at"]

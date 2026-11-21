@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Dashboard</h3>
+  <div class="d-flex gap-2">
+    <a href="{% url 'member2_assessment:profile_list' %}" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-sliders"></i> Profiles
+    </a>
+    <a href="{% url 'member2_assessment:finding_list' %}" class="btn btn-sm btn-outline-danger">
+      <i class="bi bi-bug"></i> All Findings
+    </a>
+    <a href="{% url 'member2_assessment:correlations' %}" class="btn btn-sm btn-outline-warning">
+      <i class="bi bi-diagram-3"></i> Correlations
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <!-- Targets Card -->
+  <div class="col-md-3">
+    <a href="{% url 'member1_core:target_list' %}" class="text-decoration-none">
+      <div class="card h-100 card-hover">
+        <div class="card-body">
+          <h6 class="text-muted">Targets</h6>
+          <h3 class="text-white">{{ target_count }}</h3>
+        </div>
+      </div>
+    </a>
+  </div>
+  
+  <!-- Scans Card -->
+  <div class="col-md-3">
+    <a href="{% url 'member3_operations:scan_list' %}" class="text-decoration-none">
+      <div class="card h-100 card-hover">
+        <div class="card-body">
+          <h6 class="text-muted">Scans</h6>
+          <h3 class="text-white">{{ scan_count }}</h3>
+        </div>
+      </div>
+    </a>
+  </div>
+  
+  <!-- Findings Card -->
+  <div class="col-md-3">
+    <a href="{% url 'member2_assessment:finding_list' %}" class="text-decoration-none">
+      <div class="card h-100 card-hover">
+        <div class="card-body">
+          <h6 class="text-muted">Findings</h6>
+          <h3 class="text-white">{{ finding_count }}</h3>
+          <div class="small text-muted">{{ open_finding_count }} open</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  
+  <!-- Critical/High Card -->
+  <div class="col-md-3">
+    <a href="{% url 'member2_assessment:finding_list' %}?severity=critical" class="text-decoration-none">
+      <div class="card h-100 card-hover">
+        <div class="card-body">
+          <h6 class="text-muted">Critical / High</h6>
+          <h3 class="text-white">{{ critical_count }} / {{ high_count }}</h3>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card"><div class="card-header">Severity</div>
+      <ul class="list-group list-group-flush">
+        {% for label, count in severity_rows %}
+          <li class="list-group-item d-flex justify-content-between"><span>{{ label }}</span><span class="badge bg-secondary">{{ count }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="card mt-3"><div class="card-header">Notifications</div>
+      <ul class="list-group list-group-flush">
+        {% for n in notifications %}
+          <li class="list-group-item small"><span class="badge bg-{{ n.level }}">{{ n.level }}</span> {{ n.title }}</li>
+        {% empty %}<li class="list-group-item text-muted">No unread.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card"><div class="card-header d-flex justify-content-between">
+      <span>Recent scans</span><a class="small" href="{% url 'member3_operations:scan_list' %}">View all</a>
+    </div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>#</th><th>Target</th><th>Status</th><th>Progress</th></tr></thead>
+        <tbody>
+          {% for scan in recent_scans %}
+            <tr>
+              <td><a href="{% url 'member3_operations:scan_detail' scan.pk %}">#{{ scan.id }}</a></td>
+              <td>{{ scan.target.name }}</td>
+              <td><span class="badge bg-{{ scan.status_css }}">{{ scan.get_status_display }}</span></td>
+              <td>{{ scan.progress }}%</td>
+            </tr>
+          {% empty %}<tr><td colspan="4" class="text-muted">No scans.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card mt-3"><div class="card-header">Recent findings</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Severity</th><th>Title</th><th>Target</th></tr></thead>
+        <tbody>
+          {% for f in recent_findings %}
+            <tr>
+              <td><span class="badge bg-{{ f.severity_css }}">{{ f.get_severity_display }}</span></td>
+              <td><a href="{% url 'member2_assessment:finding_detail' f.pk %}">{{ f.title }}</a></td>
+              <td>{{ f.target.name }}</td>
+            </tr>
+          {% empty %}<tr><td colspan="3" class="text-muted">No findings.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add this style tag if you want a hover effect on cards -->
+<style>
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border-color: var(--primary); /* Uses the primary color from base.html */
+  }
+</style>
+{% endblock %}

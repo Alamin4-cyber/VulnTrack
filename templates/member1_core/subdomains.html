@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Subdomains — {{ target.name }}{% endblock %}
+{% block content %}
+<h3>Subdomains — {{ target.name }}</h3>
+<div class="card mt-3">
+  <ul class="list-group list-group-flush">
+    {% for subdomain in subdomains %}
+      <li class="list-group-item"><code>{{ subdomain.name }}</code> - {{ subdomain.ip_address }}</li>
+    {% empty %}
+      <li class="list-group-item text-muted">No subdomains found.</li>
+    {% endfor %}
+  </ul>
+</div>
+<a class="btn btn-link mt-2" href="{% url 'member1_core:target_detail' target.pk %}">Back</a>
+{% endblock %}
