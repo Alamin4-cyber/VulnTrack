@@ -1,11 +1,91 @@
 {% extends 'base.html' %}
 {% block title %}{{ finding.title }}{% endblock %}
 {% block content %}
-<h3>{{ finding.title }}</h3>
-<p><strong>Severity:</strong> <span class="badge bg-{{ finding.severity_css }}">{{ finding.get_severity_display }}</span></p>
-<p><strong>Target:</strong> {{ finding.target.name }}</p>
-<p><strong>Host:</strong> {{ finding.host.hostname|default:"-" }}</p>
-<p><strong>Description:</strong><br>{{ finding.description }}</p>
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h3 class="mb-1">{{ finding.title }}</h3>
+    <span class="badge bg-{{ finding.severity_css }}">{{ finding.get_severity_display }}</span>
+    <span class="badge bg-secondary">{{ finding.get_confidence_display }}</span>
+    <span class="badge bg-dark">scan #{{ finding.scan_id }}</span>
+  </div>
+</div>
 
-<a class="btn btn-link mt-2" href="{% url 'member3_operations:scan_detail' finding.scan_id %}">Back to Scan</a>
+<div class="card mb-3">
+  <div class="card-body">
+    <p class="mb-1"><strong>Target:</strong> {{ finding.target.name }} ({{ finding.target.domain }})</p>
+    <p class="mb-1"><strong>Host:</strong> {{ finding.host.hostname|default:"-" }}</p>
+    
+    <!-- Endpoint URL Section -->
+    <p class="mb-1"><strong>Endpoint:</strong> 
+      {% if finding.endpoint %}
+        <a href="{{ finding.endpoint.url }}" target="_blank"><code>{{ finding.endpoint.url }}</code></a>
+      {% else %}
+        <span class="text-muted">Not specified</span>
+      {% endif %}
+    </p>
+
+    <p class="mb-1"><strong>Matched at:</strong> <code>{{ finding.matched_at|default:"-" }}</code></p>
+    <p class="mb-1"><strong>Type:</strong> {{ finding.vuln_type }}</p>
+    <p class="mb-1"><strong>Status:</strong> {{ finding.get_status_display }}</p>
+    <hr>
+    <p class="mb-0">{{ finding.description }}</p>
+  </div>
+</div>
+
+{% if user.is_authenticated %}
+<div class="d-flex gap-2 mb-3">
+  <a class="btn btn-sm btn-outline-primary" href="{% url 'member3_operations:evidence_create' finding.pk %}">Add evidence</a>
+  <a class="btn btn-sm btn-outline-success" href="{% url 'member3_operations:remediation_edit' finding.pk %}">Edit remediation</a>
+</div>
+{% endif %}
+
+{% for ev in finding.evidences.all %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between">
+    <span>Evidence ({{ ev.captured_at|date:"Y-m-d H:i" }})</span>
+    <a class="small" href="{% url 'member3_operations:evidence_edit' ev.pk %}">Edit</a>
+  </div>
+  <div class="card-body">
+    {% if ev.request_data %}<pre class="evidence">{{ ev.request_data }}</pre>{% endif %}
+    {% if ev.response_data %}<pre class="evidence">{{ ev.response_data }}</pre>{% endif %}
+    {% if ev.notes %}<p class="small text-muted mb-0">{{ ev.notes }}</p>{% endif %}
+  </div>
+</div>
+{% endfor %}
+
+{% if finding.remediation %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between">
+    <span>Remediation</span>
+    <a class="small" href="{% url 'member3_operations:remediation_edit' finding.pk %}">Edit</a>
+  </div>
+  <div class="card-body">
+    <p class="mb-2"><strong>Priority:</strong> {{ finding.remediation.priority }}</p>
+    <p class="mb-2">{{ finding.remediation.recommendation }}</p>
+    {% if finding.remediation.references %}<p class="small text-muted mb-2">{{ finding.remediation.references }}</p>{% endif %}
+    {% if finding.remediation.ai_explanation %}
+      <div class="alert alert-info mb-0"><strong>AI explanation:</strong><br>{{ finding.remediation.ai_explanation|linebreaksbr }}</div>
+    {% else %}
+      <a class="btn btn-sm btn-outline-info" href="{% url 'member3_operations:remediation_ai' finding.remediation.pk %}">Generate AI explanation</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="card mb-3 mt-3">
+  <div class="card-header">Risk correlations</div>
+  <ul class="list-group list-group-flush">
+    {% for c in correlations %}
+      <li class="list-group-item">
+        <span class="badge bg-dark">{{ c.score }}</span>
+        {{ c.relationship }}
+        <div class="small text-muted">{{ c.risk_note }}</div>
+      </li>
+    {% empty %}
+      <li class="list-group-item text-muted">No correlations.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<a class="btn btn-link mt-2" href="{% url 'member2_assessment:finding_list' %}">Back to findings</a>
 {% endblock %}

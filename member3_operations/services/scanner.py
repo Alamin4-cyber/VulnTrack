@@ -4,6 +4,7 @@ from django.utils import timezone
 from member1_core.models import DNSRecord, Subdomain
 from member2_assessment.models import Endpoint, Host, Port, Technology, VulnerabilityFinding
 from member3_operations.models import Evidence, Notification, Remediation, ScanJob, ScanLog
+from member2_assessment.services import correlate_scan
 
 COMMON_FINDINGS = [
     {"title": "Missing Content-Security-Policy header",
@@ -51,20 +52,23 @@ def _stage(scan, progress, stage):
     _log(scan, f"{stage} ({progress}%)")
 
 
-def _create_finding(scan, target, host, spec):
+def _create_finding(scan, target, host, spec, endpoint=None):
     f = VulnerabilityFinding.objects.create(
-        scan_id=scan.id, target=target, host=host,
+        scan_id=scan.id, target=target, host=host, endpoint=endpoint,
         title=spec["title"], vuln_type=spec["vuln_type"],
         severity=spec["severity"], confidence=spec["confidence"],
         description=spec["description"],
         matched_at=f"http://{host.hostname}{spec.get('path', '/')}",
         template_id=spec.get("template_id", ""))
+    
     Evidence.objects.create(finding=f,
         request_data=f"{spec.get('request','GET / HTTP/1.1')}\nHost: {host.hostname}",
         response_data=spec.get("response", "HTTP/1.1 200 OK"),
         notes="Demo scan evidence.")
+    
     Remediation.objects.create(finding=f, recommendation=spec["recommendation"],
         references=spec.get("references", ""), priority=spec["severity"])
+    
     return f
 
 
@@ -80,7 +84,6 @@ def fetch_subdomains_from_crtsh(domain):
                 name_value = cert.get("name_value", "")
                 for line in name_value.split("\n"):
                     line = line.strip().lower()
-                    # Avoid wildcard (*.domain.com) and ensure it's a valid subdomain
                     if line and "*" not in line and line.endswith(domain):
                         subdomains.add(line)
     except Exception as e:
@@ -113,15 +116,12 @@ def execute_scan(scan_id):
         
         real_subdomains = fetch_subdomains_from_crtsh(domain)
         
-        # Fallback if crt.sh returns nothing
         if not real_subdomains:
             real_subdomains = [domain]
         
-        # Ensure the root domain is in the list
         if domain not in real_subdomains:
             real_subdomains.insert(0, domain)
 
-        # Save subdomains to database (Member 1's model)
         for i, name in enumerate(real_subdomains):
             sub, created = Subdomain.objects.update_or_create(
                 target=target, name=name,
@@ -130,7 +130,6 @@ def execute_scan(scan_id):
             if created:
                 Subdomain.objects.filter(pk=sub.pk).update(first_scan_id=scan.id)
 
-            # Also save a DNS record for each to populate the UI
             DNSRecord.objects.update_or_create(
                 target=target, name=name, record_type="A",
                 defaults={"value": f"192.0.2.{10+(i%200)}", "ttl": 300, "scan_id": scan.id})
@@ -139,7 +138,6 @@ def execute_scan(scan_id):
         _stage(scan, 35, "Port and service discovery")
         hosts = []
         
-        # Limit the port scanning to first 5 subdomains to prevent the system from hanging
         scan_targets = real_subdomains[:5]
         
         for i, name in enumerate(scan_targets):
@@ -157,11 +155,16 @@ def execute_scan(scan_id):
         # --- STAGE 3: Vulnerability assessment ---
         _stage(scan, 65, "Vulnerability assessment")
         for i, host in enumerate(hosts):
+            # Fetch the endpoint we just created for this host
+            first_endpoint = Endpoint.objects.filter(host=host).first() 
+
+            # Apply COMMON_FINDINGS to every host
             for spec in COMMON_FINDINGS:
-                _create_finding(scan, target, host, spec)
-            if i == 0:
-                for spec in EXTRA_FINDINGS:
-                    _create_finding(scan, target, host, spec)
+                _create_finding(scan, target, host, spec, endpoint=first_endpoint)
+            
+            # Apply EXTRA_FINDINGS to EVERY host so correlations generate
+            for spec in EXTRA_FINDINGS:
+                _create_finding(scan, target, host, spec, endpoint=first_endpoint)
 
         count = VulnerabilityFinding.objects.filter(scan_id=scan.id).count()
         scan.status = "completed"
@@ -171,7 +174,15 @@ def execute_scan(scan_id):
         scan.summary = f"{count} findings across {len(hosts)} hosts."
         scan.save()
         _log(scan, f"Scan completed. Found {len(real_subdomains)} subdomains from crt.sh", "success")
-        
+
+        # 🔥 WEEK 3: AUTO-CORRELATION
+        try:
+            corr_count = correlate_scan(scan.id)
+            if corr_count > 0:
+                _log(scan, f"Auto-generated {corr_count} risk correlations.", "success")
+        except Exception as e:
+            _log(scan, f"Correlation error: {e}", "warning")
+
         if scan.initiated_by_id:
             Notification.objects.create(
                 user=scan.initiated_by, title=f"Scan #{scan.id} completed",

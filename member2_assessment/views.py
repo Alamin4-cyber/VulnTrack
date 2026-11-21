@@ -1,16 +1,19 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from member1_core.utils import role_required, visible_targets
 
 from .forms import ScanProfileForm, ScopeRuleForm
-from .models import ScanProfile, ScopeRule
-from .models import Host, VulnerabilityFinding
-from django.core.exceptions import PermissionDenied
+from .models import (
+    ScanProfile, ScopeRule, Host, VulnerabilityFinding, FindingCorrelation
+)
+from .services import correlate_scan
 
 
+# ===== WEEK 1 VIEWS =====
 @login_required
 def profile_list(request):
     profiles = ScanProfile.objects.select_related("created_by")
@@ -92,6 +95,9 @@ def scope_delete(request, pk):
         rule.delete()
         messages.success(request, "Scope rule deleted.")
     return redirect("member2_assessment:scope_list", target_id=target_id)
+
+
+# ===== WEEK 2 VIEWS =====
 @login_required
 def results(request, scan_id):
     from member3_operations.models import ScanJob
@@ -106,11 +112,63 @@ def results(request, scan_id):
     return render(request, "member2_assessment/results.html", {
         "scan": scan, "hosts": hosts, "findings": findings
     })
+
+
+@login_required
+def finding_list(request):
+    findings = VulnerabilityFinding.objects.filter(
+        target__in=visible_targets(request.user)
+    ).select_related("target", "host")
+    
+    severity = request.GET.get("severity")
+    if severity:
+        findings = findings.filter(severity=severity)
+        
+    target_id = request.GET.get("target")
+    if target_id:
+        findings = findings.filter(target_id=target_id)
+        
+    return render(request, "member2_assessment/finding_list.html", {
+        "findings": findings, 
+        "severity": severity or "",
+        "targets": visible_targets(request.user), 
+        "target_id": target_id or "",
+    })
+
+
 @login_required
 def finding_detail(request, pk):
-    # Fetch the finding and ensure the user has permission to see it
     finding = get_object_or_404(
         VulnerabilityFinding.objects.filter(target__in=visible_targets(request.user)).select_related("target", "host", "endpoint"),
         pk=pk,
     )
-    return render(request, "member2_assessment/finding_detail.html", {"finding": finding})
+    correlations = list(finding.correlations.select_related("related")) + list(
+        FindingCorrelation.objects.filter(related=finding).select_related("primary")
+    )
+    return render(request, "member2_assessment/finding_detail.html", {
+        "finding": finding, "correlations": correlations,
+    })
+
+
+# ===== WEEK 3 VIEWS =====
+@login_required
+def correlation_list(request):
+    correlations = FindingCorrelation.objects.filter(
+        primary__target__in=visible_targets(request.user)
+    ).select_related("primary", "related", "primary__host")
+    return render(request, "member2_assessment/correlations.html", {"correlations": correlations})
+
+
+@role_required("admin", "analyst")
+def rebuild_correlations(request, scan_id):
+    from member3_operations.models import ScanJob
+    scan = get_object_or_404(ScanJob, pk=scan_id)
+    if not visible_targets(request.user).filter(pk=scan.target_id).exists():
+        raise PermissionDenied
+    if request.method == "POST":
+        count = correlate_scan(scan.id)
+        if count == 0:
+            messages.warning(request, "No correlations made. Ensure the scan has multiple findings on the same host.")
+        else:
+            messages.success(request, f"{count} correlations rebuilt.")
+    return redirect("member2_assessment:correlations")

@@ -5,6 +5,7 @@ from . import views
 app_name = "member1_core"
 
 urlpatterns = [
+    # ========= WEEK 1 URLS =========
     path("", views.home, name="home"),
     path("accounts/register/", views.register, name="register"),
     path("accounts/login/", auth_views.LoginView.as_view(template_name="registration/login.html"), name="login"),
@@ -17,11 +18,13 @@ urlpatterns = [
     path("targets/<int:pk>/edit/", views.target_edit, name="target_edit"),
     path("targets/<int:pk>/delete/", views.target_delete, name="target_delete"),
     path("targets/<int:pk>/verify/", views.target_verify, name="target_verify"),
-    #=========week 2 urls========
+
+    # ========= WEEK 2 URLS =========
     path("targets/<int:pk>/subdomains/", views.subdomain_list, name="subdomain_list"),
     path("targets/<int:pk>/dns/", views.dns_list, name="dns_list"),
-    #==========week 3 urls========
-        path("comparisons/", views.comparison_list, name="comparison_list"),
+
+    # ========= WEEK 3 URLS =========
+    path("comparisons/", views.comparison_list, name="comparison_list"),
     path("comparisons/new/", views.comparison_create, name="comparison_create"),
     path("comparisons/<int:pk>/", views.comparison_detail, name="comparison_detail"),
 ]

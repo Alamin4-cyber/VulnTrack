@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Risk correlations{% endblock %}
+{% block content %}
+<h3>Risk correlations</h3>
+<div class="card mt-3">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Score</th><th>Relationship</th><th>Primary</th><th>Related</th><th>Host</th></tr></thead>
+      <tbody>
+        {% for c in correlations %}
+          <tr>
+            <td><span class="badge bg-dark">{{ c.score }}</span></td>
+            <td>{{ c.relationship }}</td>
+            <td><a href="{% url 'member2_assessment:finding_detail' c.primary.pk %}">{{ c.primary.title }}</a></td>
+            <td><a href="{% url 'member2_assessment:finding_detail' c.related.pk %}">{{ c.related.title }}</a></td>
+            <td>{{ c.primary.host.hostname|default:"-" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-muted">No correlations yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

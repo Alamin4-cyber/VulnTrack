@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Findings{% endblock %}
+{% block content %}
+<h3>Findings</h3>
+<form method="get" class="row g-2 align-items-end mb-3">
+  <div class="col-auto">
+    <label class="form-label small">Severity</label>
+    <select name="severity" class="form-select">
+      <option value="">All</option>
+      <option value="critical" {% if severity == 'critical' %}selected{% endif %}>Critical</option>
+      <option value="high" {% if severity == 'high' %}selected{% endif %}>High</option>
+      <option value="medium" {% if severity == 'medium' %}selected{% endif %}>Medium</option>
+      <option value="low" {% if severity == 'low' %}selected{% endif %}>Low</option>
+      <option value="info" {% if severity == 'info' %}selected{% endif %}>Info</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <label class="form-label small">Target</label>
+    <select name="target" class="form-select">
+      <option value="">All</option>
+      {% for target in targets %}
+        <option value="{{ target.id }}" {% if target_id|stringformat:"s" == target.id|stringformat:"s" %}selected{% endif %}>{{ target.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto"><button class="btn btn-outline-secondary">Filter</button></div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Severity</th>
+          <th>Title</th>
+          <th>Target</th>
+          <th>Host</th>
+          <th>Endpoint</th> <!-- New Endpoint Column -->
+          <th>Status</th>
+          <th>Scan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for finding in findings %}
+          <tr>
+            <td><span class="badge bg-{{ finding.severity_css }}">{{ finding.get_severity_display }}</span></td>
+            <td><a href="{% url 'member2_assessment:finding_detail' finding.pk %}">{{ finding.title }}</a></td>
+            <td>{{ finding.target.name }}</td>
+            <td>{{ finding.host.hostname|default:"-" }}</td>
+            <td><code>{{ finding.endpoint.url|default:"-" }}</code></td> <!-- Endpoint URL -->
+            <td>{{ finding.get_status_display }}</td>
+            <td>#{{ finding.scan_id }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-muted">No findings found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

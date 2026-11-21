@@ -3,7 +3,7 @@ from django.db import models
 
 from member1_core.models import Target
 
-
+# ===== WEEK 1 MODELS =====
 class ScopeRule(models.Model):
     RULE_TYPES = (("allow", "Allowed"), ("exclude", "Excluded"))
     target = models.ForeignKey(Target, on_delete=models.CASCADE, related_name="scope_rules")
@@ -38,7 +38,9 @@ class ScanProfile(models.Model):
 
     def __str__(self):
         return self.name
-    # ===== WEEK 2 MODELS =====
+
+
+# ===== WEEK 2 MODELS =====
 class Host(models.Model):
     scan_id = models.IntegerField(db_index=True)
     target = models.ForeignKey(Target, on_delete=models.CASCADE, related_name="hosts")
@@ -123,4 +125,19 @@ class VulnerabilityFinding(models.Model):
     def severity_css(self):
         return {"critical": "danger", "high": "warning", "medium": "info", "low": "secondary", "info": "secondary"}.get(self.severity, "secondary")
 
-    
+
+# ===== WEEK 3 MODELS =====
+class FindingCorrelation(models.Model):
+    primary = models.ForeignKey(VulnerabilityFinding, on_delete=models.CASCADE, related_name="correlations")
+    related = models.ForeignKey(VulnerabilityFinding, on_delete=models.CASCADE, related_name="related_correlations")
+    relationship = models.CharField(max_length=100)
+    risk_note = models.TextField(blank=True)
+    score = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-score"]
+        unique_together = ("primary", "related")
+
+    def __str__(self):
+        return f"{self.relationship} ({self.score})"

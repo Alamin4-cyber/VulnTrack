@@ -6,15 +6,15 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
+# Member 1 Imports
 from .forms import ProfileForm, RegisterForm, TargetForm
-from .models import Target, UserProfile
+from .models import Target, UserProfile, ScanComparison
 from .utils import can_scan, visible_targets
-
-
 from .comparison import build_comparison_data
 from .forms import ComparisonForm
-from .models import ScanComparison
 
+
+# ===== WEEK 1 VIEWS =====
 def home(request):
     if request.user.is_authenticated:
         return redirect("member1_core:target_list")
@@ -129,29 +129,17 @@ def target_detail(request, pk):
     role = getattr(getattr(request.user, "profile", None), "role", "")
     can_manage = request.user.is_superuser or role in ("admin", "analyst") or t.owner_id == request.user.id
     
-    # Pass all required context, including subdomains and dns_records (Week 2 features)
     return render(request, "member1_core/target_detail.html", {
         "target": t, 
         "scans": scans, 
         "can_manage": can_manage, 
         "can_run": can_scan(request.user),
-        "subdomains": t.subdomains.all()[:50],    #  Added Week 2 Context
-        "dns_records": t.dns_records.all()[:50],  #  Added Week 2 Context
-    })
-@login_required
-def subdomain_list(request, pk):
-    target = get_object_or_404(visible_targets(request.user), pk=pk)
-    return render(request, "member1_core/subdomains.html", {
-        "target": target, "subdomains": target.subdomains.all()
+        "subdomains": t.subdomains.all()[:50],    
+        "dns_records": t.dns_records.all()[:50],  
     })
 
-@login_required
-def dns_list(request, pk):
-    target = get_object_or_404(visible_targets(request.user), pk=pk)
-    return render(request, "member1_core/dns_records.html", {
-        "target": target, "dns_records": target.dns_records.all()
-    })
-#==========week 2 views========
+
+# ===== WEEK 2 VIEWS =====
 @login_required
 def subdomain_list(request, pk):
     target = get_object_or_404(visible_targets(request.user), pk=pk)
@@ -169,6 +157,8 @@ def dns_list(request, pk):
         "dns_records": target.dns_records.all()
     })
 
+
+# ===== WEEK 3 VIEWS =====
 @login_required
 def comparison_list(request):
     comparisons = ScanComparison.objects.filter(target__in=visible_targets(request.user)).select_related("target", "created_by")
