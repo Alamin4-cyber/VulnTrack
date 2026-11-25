@@ -4,6 +4,7 @@ from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 
 from member1_core.utils import role_required, visible_targets
 
@@ -78,7 +79,15 @@ def scan_run(request, pk):
     s.progress = 0
     s.current_stage = "Queued"
     s.save()
-    enqueue_scan(s.id)
+    try:
+        enqueue_scan(s.id)
+    except Exception as exc:
+        s.status = "failed"
+        s.error_message = str(exc)
+        s.finished_at = timezone.now()
+        s.save()
+        messages.error(request, f"Scan failed: {exc}")
+        return redirect("member3_operations:scan_detail", pk=s.pk)
     messages.success(request, "Scan executed.")
     return redirect("member3_operations:scan_detail", pk=s.pk)
 
