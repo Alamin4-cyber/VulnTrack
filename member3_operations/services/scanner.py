@@ -77,7 +77,7 @@ def fetch_subdomains_from_crtsh(domain):
     subdomains = set()
     try:
         url = f"https://crt.sh/?q=%25.{domain}&output=json"
-        response = requests.get(url, timeout=20)
+        response = requests.get(url, timeout=5)
         if response.status_code == 200:
             certs = response.json()
             for cert in certs:
@@ -171,7 +171,10 @@ def execute_scan(scan_id):
         scan.progress = 100
         scan.current_stage = "Completed"
         scan.finished_at = timezone.now()
-        scan.summary = f"{count} findings across {len(hosts)} hosts."
+        scan.summary = (
+            f"{count} finding{'s' if count != 1 else ''} "
+            f"across {len(hosts)} host{'s' if len(hosts) != 1 else ''}."
+        )
         scan.save()
         _log(scan, f"Scan completed. Found {len(real_subdomains)} subdomains from crt.sh", "success")
 
